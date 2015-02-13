@@ -22,7 +22,7 @@ tokens = tuple([ section.upper() for section in sections ]) + (
 def t_HEADER(t):
     r'^9\.\d+\.\d+\s+.*$'
     try:
-        t.value = t.value.split(None, 2)
+        t.value = t.value.split(None, 1)
         return t
     except ValueError:
         t_error(t)
@@ -35,7 +35,8 @@ def t_SECTION(t):
 def t_error(t):
     t.lexer.skip(len(t.value))
     t.lexer.text.append(t.value)
-    print TypeError("Unknown text '%s'" % (t.value,))
+    t.type = 'TEXT'
+    return t
 
 lexer = lex.lex()
 
