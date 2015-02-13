@@ -15,21 +15,17 @@ sections = (
 section_re = r'^(' + '|'.join(sections) + ')$'
 
 tokens = tuple([ section.upper() for section in sections ]) + (
-        'PARA',
-        'WS',
-        'ENTITYNAME',
-        'WORD',
-        'LPAREN',
-        'RPAREN',
-        'COLON',
+        'HEADER',
+        'TEXT'
         )
 
-t_WS = r'\s+'
-t_PARA = r'9\.\d+\.\d+'
-
-def t_WORD(t):
-    r'\S+'
-    lexer.text.append(t.value)
+def t_HEADER(t):
+    r'^9\.\d+\.\d+\s+.*$'
+    try:
+        t.value = t.value.split(None, 2)
+        return t
+    except ValueError:
+        t_error(t)
 
 @TOKEN(section_re)
 def t_SECTION(t):
@@ -37,10 +33,14 @@ def t_SECTION(t):
     return t
 
 def t_error(t):
-    t.lexer.skip(1)
-    raise TypeError("Unknown text '%s'" % (t.value,))
+    t.lexer.skip(len(t.value))
+    t.lexer.text.append(t.value)
+    print TypeError("Unknown text '%s'" % (t.value,))
 
 lexer = lex.lex()
+
+class Metadata:
+    pass
 
 if __name__ == '__main__':
 
@@ -51,6 +51,7 @@ if __name__ == '__main__':
         for line in tripper.descriptions(fd):
             lexer.state = 'initial'
             lexer.text = []
+            lexer.metadata = Metadata()
             lexer.input(line)
             while True:
                 tok = lexer.token()
