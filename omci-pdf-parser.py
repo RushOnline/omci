@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import with_statement
-
 from ply import lex
 from ply.lex import TOKEN
 
@@ -16,10 +14,30 @@ section_re = r'^(' + '|'.join(sections) + ')$'
 
 tokens = tuple([ section.upper() for section in sections ]) + (
         'HEADER',
-        'TEXT'
+        'TEXT',
+        'ANAME',
+        'MEID'
         )
 
-def t_HEADER(t):
+states = tuple([(state.lower(), 'exclusive') for state in (sections + ('acontent',))])
+
+def t_attributes_MEID(t):
+    r'^\s+.*:'
+    t.lexer.indent = len(t.value) - len(t.value.lstrip())
+    t.value = t.value.strip(' \t:\r\n')
+    t.lexer.begin('acontent')
+    return t
+
+def t_acontent_ANAME(t):
+    r'^\s+.*:'
+    indent = len(t.value) - len(t.value.lstrip())
+    if abs(indent - t.lexer.indent) < 3:
+        t.value = t.value.strip(' \t:\r\n')
+        return t
+    t.type = 'TEXT'
+    return t
+
+def t_ANY_HEADER(t):
     r'^9\.\d+\.\d+\s+.*$'
     try:
         t.value = t.value.split(None, 1)
@@ -28,11 +46,12 @@ def t_HEADER(t):
         t_error(t)
 
 @TOKEN(section_re)
-def t_SECTION(t):
+def t_ANY_SECTION(t):
     t.type = t.value.upper()
+    t.lexer.begin(t.value.lower())
     return t
 
-def t_error(t):
+def t_ANY_error(t):
     t.lexer.skip(len(t.value))
     t.lexer.text.append(t.value)
     t.type = 'TEXT'
@@ -49,8 +68,8 @@ if __name__ == '__main__':
     import sys
 
     with open(sys.argv[1]) as fd:
+        lexer.indent = 0
         for line in tripper.descriptions(fd):
-            lexer.state = 'initial'
             lexer.text = []
             lexer.metadata = Metadata()
             lexer.input(line)
