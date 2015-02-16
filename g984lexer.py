@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 
+import re
+
 from ply import lex
 from ply.lex import TOKEN
-import re
+
+from g984strip import descriptions
 
 sections = (
         'Relationships',
@@ -77,25 +80,36 @@ def t_ANY_error(t):
     t.value = t.value[:skip.end()]
     return t
 
-lexer = lex.lex()
+class Lexer(object):
+    def __init__(self, lexer):
+        self.lexer = lexer
+        self.lexer.indent = 0
+        self.lexer.text = ''
+        self.text = None
+
+    def _lexit(self, filename):
+
+        with open(filename) as fd:
+            for line in descriptions(fd):
+                self.lexer.input(line)
+                while True:
+                    tok = self.lexer.token()
+                    if not tok: break
+                    yield tok
+
+    def input(self, filename):
+        self.text = self._lexit(filename)
+
+    def token(self):
+        return next(self.text, None)
+
+lexer = Lexer(lex.lex())
 
 if __name__ == '__main__':
 
-    import tripper
     import sys
-
-    with open(sys.argv[1]) as fd:
-        lexer.indent = 0
-        lexer.text = ''
-        for line in tripper.descriptions(fd):
-            lexer.input(line)
-            while True:
-                tok = lexer.token()
-                if not tok: break
-                if tok.type == 'TEXT':
-                    lexer.text += tok.value
-                elif lexer.text:
-                    lexer.text = ''
-                print repr(tok.type), repr(tok.value)
-            if lexer.text:
-                lexer.text += '\n'
+    lexer.input(sys.argv[1])
+    while True:
+        tok = lexer.token()
+        if not tok: break
+        print repr(tok)

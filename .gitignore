@@ -1,2 +1,4 @@
 *.pyc
 *.swp
+parser.out
+parsetab.py

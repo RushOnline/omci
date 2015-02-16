@@ -2,7 +2,7 @@
 
 import ply.yacc as yacc
 
-from lex import tokens
+from g984lexer import tokens
 
 def p_entities(p):
     '''entities : entity
@@ -33,13 +33,22 @@ def p_attribs(p):
     return p
 
 def p_attribute(p):
-    '''attribute : MEID text flags
-                 | ANAME text flags'''
+    '''attribute : MEID attrdesc
+                 | ANAME attrdesc
+    '''
+    return p
+
+def p_attrdesc(p):
+    '''attrdesc : attrdesc text
+                | attrdesc flags
+                | empty
+    '''
     return p
 
 def p_flags(p):
     '''flags : flag
-           | flags flag'''
+             | flags flag
+    '''
     return p
 
 def p_flag(p):
@@ -66,9 +75,12 @@ def p_text(p):
     return p
 
 def p_error(p):
-    print "Syntax error in input!"
+    print "Syntax error in input!", p
 
 parser = yacc.yacc()
 
 if __name__ == '__main__':
-    pass
+    import sys
+    from g984lexer import lexer
+    #parser.parse( sys.argv[1], debug=1, lexer=lexer)
+    parser.parse( sys.argv[1], lexer=lexer)

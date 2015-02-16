@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
-from __future__ import with_statement
 import re
-
 
 def descriptions(fd):
     START = re.compile('^9.1.1\s+ON[TU]-G$')
@@ -88,7 +86,7 @@ def identifiers(fd):
 if __name__ == '__main__':
 
     def usage():
-        print sys.argv[0], '<-i|-d> <filename>'
+        print( sys.argv[0], '<-i|-d> <filename>' )
         sys.exit(1)
 
     import sys
@@ -97,7 +95,7 @@ if __name__ == '__main__':
     try:
         opts, args = getopt(sys.argv[1:], 'id')
     except GetoptError as err:
-        print str(err)
+        print( str(err) )
         usage()
 
     if len(args) != 1: usage()
@@ -118,5 +116,5 @@ if __name__ == '__main__':
     for action in actions:
         with open(filename) as fd:
             for result in action(fd):
-                print result
+                print( result )
 
