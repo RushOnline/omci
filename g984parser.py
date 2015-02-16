@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from pprint import pprint
+
 import ply.yacc as yacc
 
 from g984lexer import tokens
@@ -8,60 +10,77 @@ def p_entities(p):
     '''entities : entity
                 | entities entity
     '''
-    pass
+    if len(p) == 2:
+        p[0] = (p[1],)
+    elif len(p) == 3:
+        p[0] = p[1] + (p[2],)
+    pprint(p[0])
 
 def p_entity(p):
     '''entity : header relationships attributes actions notifications'''
-    pass
+    p[0] = tuple(p[1:])
 
 def p_header(p):
     '''header : HEADER text'''
-    pass
+    p[0] = ('header', p[1], p[2][1])
 
 def p_relationships(p):
     '''relationships : RELATIONSHIPS text'''
-    pass
+    p[0] = ('relationships', p[2][1])
 
 def p_attributes(p):
     '''attributes : ATTRIBUTES attribs'''
-    pass
+    p[0] = p[2]
 
 def p_attribs(p):
     '''attribs : attribute
                | attribs attribute
     '''
-    pass
+    if len(p) == 2:
+        p[0] = ('attributes', (p[1],))
+    elif len(p) == 3:
+        p[0] = ('attributes', p[1][1] + (p[2],))
 
 def p_attribute(p):
     '''attribute : MEID attrdesc
                  | ANAME attrdesc
     '''
-    pass
+    p[0] = (p[1], p[2])
 
 def p_attrdesc(p):
     '''attrdesc : attrdesc text
                 | attrdesc flags
                 | empty
     '''
-    pass
+    if len(p) == 2:
+        p[0] = ('attr-desc', tuple(), '')
+    elif len(p) == 3:
+        if p[2][0] == 'flags':
+            p[0] = ('attr-desc', p[1][1] + (p[2],), p[1][2])
+        elif p[2][0] == 'text':
+            p[0] = ('attr-desc', p[1][1], p[1][2] + p[2][1])
 
 def p_flags(p):
     '''flags : flags flag
              | flag
     '''
-    pass
+    #p[0] = p[1][1] + (
+    if len(p) == 2:
+        p[0] = ('flags', (p[1],))
+    else:
+        p[0] = ('flags', p[1][1] + (p[2],))
 
 def p_flag(p):
     'flag : LPAREN text RPAREN'
-    pass
+    p[0] = ('flag', p[2])
 
 def p_actions(p):
     '''actions : ACTIONS text'''
-    pass
+    p[0] = ('actions', p[2])
 
 def p_notifications(p):
     '''notifications : NOTIFICATIONS text'''
-    p[0] = p[2]
+    p[0] = ('notifications', p[2])
 
 def p_empty(p):
     'empty :'
@@ -73,9 +92,9 @@ def p_text(p):
          | empty
     '''
     if len(p) == 3:
-        p[0] = (p[1] or '') + p[2]
+        p[0] = ('text', p[1][1] + p[2])
     else:
-        p[0] = ''
+        p[0] = ('text', '')
 
 def p_error(p):
     print "Syntax error in input!", p
