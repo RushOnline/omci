@@ -95,8 +95,7 @@ if __name__ == '__main__':
                 if tok.type == 'TEXT':
                     lexer.text += tok.value
                 elif lexer.text:
-                    print '*TEXT*', lexer.text
                     lexer.text = ''
-                    print repr(tok.type), repr(tok.value)
+                print repr(tok.type), repr(tok.value)
             if lexer.text:
                 lexer.text += '\n'
