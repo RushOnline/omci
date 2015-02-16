@@ -8,60 +8,60 @@ def p_entities(p):
     '''entities : entity
                 | entities entity
     '''
-    return p
+    pass
 
 def p_entity(p):
     '''entity : header relationships attributes actions notifications'''
-    return p
+    pass
 
 def p_header(p):
     '''header : HEADER text'''
-    return p
+    pass
 
 def p_relationships(p):
     '''relationships : RELATIONSHIPS text'''
-    return p
+    pass
 
 def p_attributes(p):
     '''attributes : ATTRIBUTES attribs'''
-    return p
+    pass
 
 def p_attribs(p):
     '''attribs : attribute
                | attribs attribute
     '''
-    return p
+    pass
 
 def p_attribute(p):
     '''attribute : MEID attrdesc
                  | ANAME attrdesc
     '''
-    return p
+    pass
 
 def p_attrdesc(p):
     '''attrdesc : attrdesc text
                 | attrdesc flags
                 | empty
     '''
-    return p
+    pass
 
 def p_flags(p):
-    '''flags : flag
-             | flags flag
+    '''flags : flags flag
+             | flag
     '''
-    return p
+    pass
 
 def p_flag(p):
     'flag : LPAREN text RPAREN'
-    return p
+    pass
 
 def p_actions(p):
     '''actions : ACTIONS text'''
-    return p
+    pass
 
 def p_notifications(p):
     '''notifications : NOTIFICATIONS text'''
-    return p
+    p[0] = p[2]
 
 def p_empty(p):
     'empty :'
@@ -72,7 +72,10 @@ def p_text(p):
     text : text TEXT
          | empty
     '''
-    return p
+    if len(p) == 3:
+        p[0] = (p[1] or '') + p[2]
+    else:
+        p[0] = ''
 
 def p_error(p):
     print "Syntax error in input!", p
