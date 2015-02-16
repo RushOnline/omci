@@ -2,6 +2,7 @@
 
 from ply import lex
 from ply.lex import TOKEN
+import re
 
 sections = (
         'Relationships',
@@ -16,10 +17,12 @@ tokens = tuple([ section.upper() for section in sections ]) + (
         'HEADER',
         'TEXT',
         'ANAME',
-        'MEID'
+        'MEID',
+        'LPAREN',
+        'RPAREN'
         )
 
-states = tuple([(state.lower(), 'exclusive') for state in (sections + ('acontent',))])
+states = tuple([(state.lower(), 'exclusive') for state in (sections + ('acontent', 'fcontent'))])
 
 def t_attributes_MEID(t):
     r'^\s+.*:'
@@ -28,14 +31,30 @@ def t_attributes_MEID(t):
     t.lexer.begin('acontent')
     return t
 
+def t_acontent_LPAREN(t):
+    r'\('
+    return t
+
+def t_acontent_RPAREN(t):
+    r'\)'
+    return t
+
+def t_acontent_error(t):
+    paren = re.search(r'\(|\)', t.value)
+    if paren:
+        #print '%s "%s"' % (paren.end(), t.value)
+        t.value = t.value[:paren.end()-1]
+
+    t.lexer.skip(len(t.value))
+    t.type = 'TEXT'
+    return t
+
 def t_acontent_ANAME(t):
     r'^\s+.*:'
     indent = len(t.value) - len(t.value.lstrip())
     if abs(indent - t.lexer.indent) < 3:
         t.value = t.value.strip(' \t:\r\n')
         return t
-    t.type = 'TEXT'
-    return t
 
 def t_ANY_HEADER(t):
     r'^9\.\d+\.\d+\s+.*$'
@@ -52,15 +71,13 @@ def t_ANY_SECTION(t):
     return t
 
 def t_ANY_error(t):
-    t.lexer.skip(len(t.value))
-    t.lexer.text.append(t.value)
+    skip = re.match(r'\s+|\S+', t.value)
+    t.lexer.skip(skip.end())
     t.type = 'TEXT'
+    t.value = t.value[:skip.end()]
     return t
 
 lexer = lex.lex()
-
-class Metadata:
-    pass
 
 if __name__ == '__main__':
 
@@ -69,11 +86,17 @@ if __name__ == '__main__':
 
     with open(sys.argv[1]) as fd:
         lexer.indent = 0
+        lexer.text = ''
         for line in tripper.descriptions(fd):
-            lexer.text = []
-            lexer.metadata = Metadata()
             lexer.input(line)
             while True:
                 tok = lexer.token()
                 if not tok: break
-                print repr(tok.type), repr(tok.value)
+                if tok.type == 'TEXT':
+                    lexer.text += tok.value
+                elif lexer.text:
+                    print '*TEXT*', lexer.text
+                    lexer.text = ''
+                    print repr(tok.type), repr(tok.value)
+            if lexer.text:
+                lexer.text += '\n'
