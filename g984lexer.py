@@ -20,7 +20,6 @@ tokens = tuple([ section.upper() for section in sections ]) + (
         'HEADER',
         'TEXT',
         'ANAME',
-        'MEID',
         'LPAREN',
         'RPAREN'
         )
@@ -31,6 +30,7 @@ def t_attributes_MEID(t):
     r'^\s+.*:'
     t.lexer.indent = len(t.value) - len(t.value.lstrip())
     t.value = t.value.strip(' \t:\r\n')
+    t.type = 'ANAME'
     t.lexer.begin('acontent')
     return t
 
@@ -60,7 +60,12 @@ def t_acontent_ANAME(t):
         return t
 
 def t_ANY_HEADER(t):
-    r'^9\.\d+\.\d+\s+.*$'
+    r'^(9\.\d+\.\d+\s+.*)|(Vendor-specific usage)$'
+
+    if t.value == 'This clause is intentionally left blank':
+        t.type = 'TEXT'
+        return t
+
     try:
         t.value = t.value.split(None, 1)
         return t
@@ -92,6 +97,7 @@ class Lexer(object):
         with open(filename) as fd:
             for line in descriptions(fd):
                 self.lexer.input(line)
+                self.lexer.lineno += 1
                 while True:
                     tok = self.lexer.token()
                     if not tok: break

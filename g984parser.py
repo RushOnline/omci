@@ -1,23 +1,27 @@
 #!/usr/bin/env python
 
+import re
 from pprint import pprint
+from copy import deepcopy
 
 import ply.yacc as yacc
 
 from g984lexer import tokens
 
 def p_entities(p):
-    '''entities : entity
-                | entities entity
+    '''entities : entities entity
+                | entity
     '''
     if len(p) == 2:
-        p[0] = (p[1],)
+        p[0] = ( p[1], )
     elif len(p) == 3:
-        p[0] = p[1] + (p[2],)
-    pprint(p[0])
+        p[0] = p[1] + ( p[2], )
 
 def p_entity(p):
-    '''entity : header relationships attributes actions notifications'''
+    '''entity : header relationships attributes actions notifications
+              | header relationships attributes actions
+              | header
+    '''
     p[0] = tuple(p[1:])
 
 def p_header(p):
@@ -42,8 +46,7 @@ def p_attribs(p):
         p[0] = ('attributes', p[1][1] + (p[2],))
 
 def p_attribute(p):
-    '''attribute : MEID attrdesc
-                 | ANAME attrdesc
+    '''attribute : ANAME attrdesc
     '''
     p[0] = (p[1], p[2])
 
@@ -64,15 +67,33 @@ def p_flags(p):
     '''flags : flags flag
              | flag
     '''
-    #p[0] = p[1][1] + (
     if len(p) == 2:
         p[0] = ('flags', (p[1],))
     else:
-        p[0] = ('flags', p[1][1] + (p[2],))
+        p[0] = ('flags', p[1][1] + (p[2][1],))
 
 def p_flag(p):
     'flag : LPAREN text RPAREN'
-    p[0] = ('flag', p[2])
+    flag = p[2][1]
+
+    if flag == 'mandatory':
+        p[0] = ('flag', 'mandatory')
+    elif flag == 'optional':
+        p[0] = ('flag', 'optional')
+    else:
+        flags = tuple()
+        for xflag in re.split('\W+', flag):
+            if xflag in ['R','W','Set-by-create']:
+                flags = flags + (xflag,)
+        if flags:
+            p[0] = ('flag', flags)
+        else:
+            try:
+                p[0] = ('size', int(re.match('(\d+).*byte', flag).groups()[0]))
+            except:
+                pass
+    if not p[0]:
+        p[0] = ('flag-ext', '(%s)' % flag)
 
 def p_actions(p):
     '''actions : ACTIONS text'''
@@ -96,13 +117,18 @@ def p_text(p):
     else:
         p[0] = ('text', '')
 
-def p_error(p):
-    print "Syntax error in input!", p
+def p_error(t):
+    if t.type in ( 'RPAREN', 'LPAREN' ):
+        parser.errok()
+        return
+    raise SyntaxError('%s : line %d' % (t, t.lineno))
 
 parser = yacc.yacc()
 
 if __name__ == '__main__':
     import sys
     from g984lexer import lexer
-    #parser.parse( sys.argv[1], debug=1, lexer=lexer)
-    parser.parse( sys.argv[1], lexer=lexer)
+    #ast = parser.parse( sys.argv[1], debug=1, lexer=lexer)
+    ast = parser.parse( sys.argv[1], lexer=lexer)
+    pprint(ast)
+    #print len(ast)

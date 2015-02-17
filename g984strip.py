@@ -34,6 +34,9 @@ def descriptions(fd):
         if STOP.match(line):
             break
 
+        if line == 'Vendor-specific usage':
+            line = '9.1.4 Software image Vendor-specific usage'
+
         yield line
 
 def identifiers(fd):
